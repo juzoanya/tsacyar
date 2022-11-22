@@ -50,11 +50,11 @@ void	orientation_init(t_cube *cube)
 	j = -1;
 	while (cube->map[++i] && j < 0)
 		j = ft_strstrchr(cube->map[i], "NSEW");
-	cube->ply.pos.x = (i - 1) + 0.5;
-	cube->ply.pos.y = j + 0.5;
-	cube->ply.orient = cube->map[(int)cube->ply.pos.x][(int)cube->ply.pos.y];
-	//set_orientation(cube);
-	printf("x = %f | y = %f\n", cube->ply.pos.x, cube->ply.pos.y);
+	cube->ply.pos.x = j + 0.5;
+	cube->ply.pos.y = (i - 1) + 0.5;
+	cube->ply.orient = cube->map[(int)cube->ply.pos.y][(int)cube->ply.pos.x];
+	set_orientation(cube);
+	//printf("x = %f | y = %f\n", cube->ply.pos.x, cube->ply.pos.y);
 }
 
 unsigned int	hex_from_rgb(int *rgb)

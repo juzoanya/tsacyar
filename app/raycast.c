@@ -37,9 +37,9 @@ int	render_wall(t_cube *cube, int x)
 	cube->rays.tex_pos = 0.0;
 	while (y <= cube->rays.draw_end)
 	{	
-		cube->rays.tex_y = (int)cube->rays.tex_pos;
+		cube->rays.tex_y = (int)cube->rays.tex_pos & (TEX_H - 1);
 		cube->rays.tex_pos += cube->rays.step;
-		color = ft_pixel_get(&cube->texture[cube->tex_ind], cube->rays.tex_x, cube->rays.tex_y);
+		color = ft_pixel_get(&cube->texture[cube->tex_num], cube->rays.tex_x, cube->rays.tex_y);
 		ft_pixel_put(&cube->img, x, y, color);
 		y++;
 	}
@@ -47,7 +47,7 @@ int	render_wall(t_cube *cube, int x)
 	// {	
 	// 	cube->rays.tex_y = (int)cube->rays.tex_pos;
 	// 	cube->rays.tex_pos += cube->rays.step;
-	// 	color = ft_pixel_get(&cube->texture[cube->tex_ind], cube->rays.tex_x, cube->rays.tex_y);
+	// 	color = ft_pixel_get(&cube->texture[cube->tex_num], cube->rays.tex_x, cube->rays.tex_y);
 	// 	if (y >= 0 && y < cube->win.y)
 	// 		ft_pixel_put(&cube->img, x, y, color);
 	// 	y++;
@@ -58,26 +58,26 @@ int	render_wall(t_cube *cube, int x)
 void	choose_texture(t_cube *cube)
 {
 	if (cube->rays.w_side == 0 && cube->rays.ray_dir.x < 0)
-		cube->tex_ind = E;
+		cube->tex_num = E;
 	else if (cube->rays.w_side == 0 && cube->rays.ray_dir.x > 0)
-		cube->tex_ind = W;
+		cube->tex_num = W;
 	else if (cube->rays.w_side == 1 && cube->rays.ray_dir.x < 0)
-		cube->tex_ind = N;
+		cube->tex_num = N;
 	else if (cube->rays.w_side == 1 && cube->rays.ray_dir.x > 0)
-		cube->tex_ind = S;
+		cube->tex_num = S;
 	
 	if (cube->rays.w_side == 0)
 		cube->rays.wall_x = cube->ply.pos.y + cube->rays.perp_wall_dist * cube->rays.ray_dir.y;
 	else
 		cube->rays.wall_x = cube->ply.pos.x + cube->rays.perp_wall_dist * cube->rays.ray_dir.x;
 	cube->rays.wall_x -= (int)(cube->rays.wall_x);
-	cube->rays.tex_x = (int)(cube->rays.wall_x * (double)(cube->tex_width[cube->tex_ind]));
+	cube->rays.tex_x = (int)(cube->rays.wall_x * (double)(cube->tex_width[cube->tex_num]));
 
 	if (cube->rays.w_side == 0 && cube->rays.ray_dir.x > 0)
-		cube->rays.tex_x = cube->tex_width[cube->tex_ind] - cube->rays.tex_x - 1;
+		cube->rays.tex_x = cube->tex_width[cube->tex_num] - cube->rays.tex_x - 1;
 	if (cube->rays.w_side == 1 && cube->rays.ray_dir.y < 0)
-		cube->rays.tex_x = cube->tex_width[cube->tex_ind] - cube->rays.tex_x - 1;
-	cube->rays.step = 1.0 * cube->tex_hght[cube->tex_ind] / cube->rays.line_height;
+		cube->rays.tex_x = cube->tex_width[cube->tex_num] - cube->rays.tex_x - 1;
+	cube->rays.step = 1.0 * cube->tex_hght[cube->tex_num] / cube->rays.line_height;
 	cube->rays.tex_pos = (cube->rays.draw_start - cube->win.y / 2 + cube->rays.line_height) * cube->rays.step;
 	//printf("tex_x-%d\n", cube->rays.tex_x);
 	//printf("tex_p-%f\n", cube->rays.tex_pos);
@@ -94,9 +94,9 @@ void	compute_distance(t_cube *cube)
 		cube->rays.wall_x += cube->ply.pos.y;
 		printf("+wall_x = %f\n", cube->rays.wall_x);
 		if (cube->rays.ray_dir.x < 0)
-			cube->tex_ind = E;
+			cube->tex_num = E;
 		else
-			cube->tex_ind = W;
+			cube->tex_num = W;
 	}
 	else
 	{
@@ -105,16 +105,16 @@ void	compute_distance(t_cube *cube)
 		cube->rays.wall_x = cube->rays.pos.x + cube->rays.perp_wall_dist * cube->rays.ray_dir.x;
 		cube->rays.wall_x += cube->ply.pos.x;
 		if (cube->rays.ray_dir.y < 0)
-			cube->tex_ind = N;
+			cube->tex_num = N;
 		else
-			cube->tex_ind = S;
+			cube->tex_num = S;
 	}
 	cube->rays.wall_x -= (int)(cube->rays.wall_x);
-	cube->rays.tex_x = (int)(cube->rays.wall_x * (double)(cube->tex_width[cube->tex_ind]));
+	cube->rays.tex_x = (int)(cube->rays.wall_x * (double)(cube->tex_width[cube->tex_num]));
 	if ((cube->rays.w_side == 0 && cube->rays.ray_dir.x > 0) || (cube->rays.w_side == 1 && cube->rays.ray_dir.y < 0))
-		cube->rays.tex_x = cube->tex_width[cube->tex_ind] - cube->rays.tex_x - 1;
+		cube->rays.tex_x = cube->tex_width[cube->tex_num] - cube->rays.tex_x - 1;
 	cube->rays.line_height = (int)(cube->win.y / cube->rays.perp_wall_dist);			//height of line to be drawn is the inverse of perpendicular wall distance.
-	cube->rays.step = (double)(cube->tex_hght[cube->tex_ind] / cube->rays.line_height);
+	cube->rays.step = (double)(cube->tex_hght[cube->tex_num] / cube->rays.line_height);
 	cube->rays.draw_start = cube->win.y / 2 - cube->rays.line_height / 2;
 	if (cube->rays.draw_start < 0)
 		cube->rays.draw_start = 0;
@@ -131,7 +131,7 @@ void	compute_distance(t_cube *cube)
 	// 	cube->rays.draw_end = cube->win.y - 1;
 	// printf("wall_x = %f | tex_x = %d\n", cube->rays.wall_x, cube->rays.tex_x);
 	// printf("wall_h = %f\n", cube->rays.line_height);
-	// printf("tex_idx = %d\n", cube->tex_ind);
+	// printf("tex_idx = %d\n", cube->tex_num);
 	//printf("side_dist-%f\n", cube->rays.side_dist.x);
 	//printf("d_dist-%f\n", cube->rays.delta_dist.x);
 	//printf("p_dist-%f\n", cube->rays.perp_wall_dist);
@@ -139,10 +139,55 @@ void	compute_distance(t_cube *cube)
 	printf("wallSide = %d\n", cube->rays.w_side);
 	printf("p_dist = %f\n", cube->rays.perp_wall_dist);
 	printf("wall_x = %f\n", cube->rays.wall_x);
-	printf("idx = %d\n", cube->tex_ind);
+	printf("idx = %d\n", cube->tex_num);
 	printf("tex_x = %d\n", cube->rays.tex_x);
 	printf("wall_h = %f\n", cube->rays.line_height);
 	printf("step = %f\n", cube->rays.step);
+}
+
+void	calc_distance(t_cube *cube)
+{
+	if (cube->rays.w_side == 0)
+		cube->rays.perp_wall_dist = (cube->rays.pos.x - cube->ply.pos.x + (1 - cube->ply.step.x) / 2) / cube->rays.ray_dir.x;
+	else
+		cube->rays.perp_wall_dist = (cube->rays.pos.y - cube->ply.pos.y + (1 - cube->ply.step.y) / 2) / cube->rays.ray_dir.y;
+	
+	cube->rays.line_height = (int)(cube->win.y / cube->rays.perp_wall_dist);
+
+	cube->rays.draw_start = -cube->rays.line_height / 2 + cube->win.y / 2;
+	cube->rays.draw_end = cube->rays.line_height / 2 + cube->win.y / 2;
+	if (cube->rays.draw_start < 0)
+		cube->rays.draw_start = 0;
+	if (cube->rays.draw_end >= cube->win.y)
+		cube->rays.draw_end = cube->win.y - 1;
+	
+	if (cube->rays.w_side == 0)
+	{
+		if (cube->rays.ray_dir.x < 0)
+			cube->colour = C_EA;
+		//	cube->tex_num = E;
+		else
+			cube->tex_num = W;
+		cube->rays.wall_x = cube->ply.pos.y + cube->rays.perp_wall_dist * cube->rays.ray_dir.y;
+	}
+	else
+	{
+		if (cube->rays.ray_dir.y < 0)
+			cube->tex_num = N;
+		else
+			cube->tex_num = S;
+		cube->rays.wall_x = cube->ply.pos.x + cube->rays.perp_wall_dist * cube->rays.ray_dir.x;
+	}
+	cube->rays.wall_x -= floor(cube->rays.wall_x);
+
+	cube->rays.tex_x = (int)(cube->rays.wall_x * (double)TEX_W);
+	if (cube->rays.w_side == 0 && cube->rays.ray_dir.x > 0)
+		cube->rays.tex_x = TEX_W - cube->rays.tex_x - 1;
+	if (cube->rays.w_side == 1 && cube->rays.ray_dir.y < 0)
+		cube->rays.tex_x = TEX_W - cube->rays.tex_x - 1;
+
+	cube->rays.step = 1.0 * TEX_H / cube->rays.line_height;
+	cube->rays.tex_pos = (cube->rays.draw_start - cube->win.y / 2 + cube->rays.line_height / 2) * cube->rays.step;
 }
 
 /*This function increments ray by 1 square until a wall is hit. If ray is in x-dir
@@ -242,7 +287,7 @@ int	raycast(t_cube *cube)
 
 	x = -1;
 	raycast_init(cube);
-	//draw_bg(cube);
+	draw_bg(cube);
 	while (++x < cube->win.x)
 	{
 		camera = 2 * x / (double)cube->win.x - 1; //x-coordinate of camera plane
@@ -258,7 +303,8 @@ int	raycast(t_cube *cube)
 		printf("dd_x=%f | dd_y=%f\n", cube->rays.delta_dist.x, cube->rays.delta_dist.y);
 		calculate_steps(cube);
 		find_wall(cube);
-		compute_distance(cube);
+		//compute_distance(cube);
+		calc_distance(cube);
 		render_wall(cube, x);
 	}
 	mlx_put_image_to_window(cube->mlx, cube->window, cube->img.img, 0, 0);

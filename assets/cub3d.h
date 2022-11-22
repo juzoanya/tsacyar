@@ -20,6 +20,14 @@
 # define WIN_WIDTH	768
 # define WIN_HEIGHT	480
 
+# define TEX_W	64
+# define TEX_H	64
+
+# define C_NO	0x90AFC5
+# define C_EA	0x336B87
+# define C_WE	0x2E4600
+# define C_SO	0x486B00
+
 # include <stdio.h>
 # include <unistd.h>
 # include <fcntl.h>
@@ -140,7 +148,7 @@ typedef struct	s_cube
 	char		tex_e[PATH_LEN];	// For storage of East texture filepath
 	int			col_f[4];			//[0]=255, [1]=123, [2]=254, [3]=NULL
 	int			col_c[4];			//[0]=255, [1]=123, [2]=254, [3]=NULL
-	int			tex_ind;			//value of texture index to be used.
+	int			tex_num;			//value of texture index to be used.
 	t_axis		win;				//MLX window width and height sizes
 	t_img		img;
 	t_img		texture[4];			//holds the strings for the file path of NO, SO, WE, EA textures.
@@ -149,7 +157,7 @@ typedef struct	s_cube
 	t_player	ply;
 	t_rays		rays;
 	char		**map;				// 2D array holding full map info
-	t_info		info;
+	int			colour;
 }				t_cube;
 
 // libft functions in libft_tools.c file
