@@ -239,23 +239,37 @@ int	main_loop(t_cube *cube)
 
 int	key_press(int key, t_cube *cube)
 {
-	if (key == 87 + 32)
+	if (key == 87 + 32) //W
 	{
-		if (!cube->map[(int)(cube->info.posX + cube->info.dirX * cube->info.moveSpeed)][(int)(cube->info.posY)])
+		if (cube->map[(int)(cube->info.posX + cube->info.dirX * cube->info.moveSpeed)][(int)(cube->info.posY)] != '1')
 			cube->info.posX += cube->info.dirX * cube->info.moveSpeed;
-		if (!cube->map[(int)(cube->info.posX)][(int)(cube->info.posY + cube->info.dirY* cube->info.moveSpeed)])
-			cube->info.posY += cube->info.dirY* cube->info.moveSpeed;
+		if (cube->map[(int)(cube->info.posX)][(int)(cube->info.posY + cube->info.dirY* cube->info.moveSpeed)] != '1')
+			cube->info.posY += cube->info.dirY * cube->info.moveSpeed;
 	}
 	//move backwards if no wall behind you
-	if (key == 83 + 32)
+	if (key == 83 + 32) //S
 	{
-		if (!cube->map[(int)(cube->info.posX - cube->info.dirX * cube->info.moveSpeed)][(int)(cube->info.posY)])
+		if (cube->map[(int)(cube->info.posX - cube->info.dirX * cube->info.moveSpeed)][(int)(cube->info.posY)] != '1')
 			cube->info.posX -= cube->info.dirX * cube->info.moveSpeed;
-		if (!cube->map[(int)(cube->info.posX)][(int)(cube->info.posY - cube->info.dirY* cube->info.moveSpeed)])
+		if (cube->map[(int)(cube->info.posX)][(int)(cube->info.posY - cube->info.dirY* cube->info.moveSpeed)] != '1')
 			cube->info.posY -= cube->info.dirY* cube->info.moveSpeed;
 	}
+	if (key == 65 + 32) //A
+	{
+		if (cube->map[(int)(cube->info.posX - cube->info.dirX * cube->info.moveSpeed)][(int)(cube->info.posY)] != '1')
+			cube->info.posX -= cube->info.dirX * cube->info.moveSpeed;
+		if (cube->map[(int)(cube->info.posX)][(int)(cube->info.posY - cube->info.dirY * cube->info.moveSpeed)] != '1')
+			cube->info.posY -= cube->info.dirY * cube->info.moveSpeed;
+	}
+	if (key == 68 + 32) //D
+	{
+		if (cube->map[(int)(cube->info.posX + cube->info.dirX * cube->info.moveSpeed)][(int)(cube->info.posY)] != '1')
+			cube->info.posX += cube->info.dirX * cube->info.moveSpeed;
+		if (cube->map[(int)(cube->info.posX)][(int)(cube->info.posY + cube->info.dirY * cube->info.moveSpeed)] != '1')
+			cube->info.posY += cube->info.dirY* cube->info.moveSpeed;
+	}
 	//rotate to the right
-	if (key == 68 + 32)
+	if (key == 63636)
 	{
 		//both camera direction and camera plane must be rotated
 		double oldDirX = cube->info.dirX;
@@ -266,7 +280,7 @@ int	key_press(int key, t_cube *cube)
 		cube->info.planeY = oldPlaneX * sin(-cube->info.rotSpeed) + cube->info.planeY * cos(-cube->info.rotSpeed);
 	}
 	//rotate to the left
-	if (key == 65 + 32)
+	if (key == 69698)
 	{
 		//both camera direction and camera plane must be rotated
 		double oldDirX = cube->info.dirX;
