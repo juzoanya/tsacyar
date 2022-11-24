@@ -196,4 +196,6 @@ void	draw_bg(t_cube *cube);
 
 void	orientation_init(t_cube *cube);
 
+int		close_cube(t_cube *cube);
+
 #endif

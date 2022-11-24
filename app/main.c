@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	if (argc != 2 || !check_valid_scene(&cube, argv[1]))
 		return (write(2, "Error\nCheck Input\n", 18));
 	run_cube(&cube); // this should run graphics AND FREE cube.map by calling //mem_switch(cube.map, 0);
-
+/*
 	// FOR TESTING PURPOSES ONLY BEGIN***********************************************************
 	printf("north_tex = %s\n", cube.tex_n);
 	printf("south_tex = %s\n", cube.tex_s);
@@ -35,6 +35,6 @@ int main(int argc, char *argv[])
 	}
 	mem_switch(cube.map, 0);
 	// FOR TESTING PURPOSES ONLY END****************************************************************
-	
+*/
 	return (0);
 }

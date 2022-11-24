@@ -204,4 +204,6 @@ void	draw_bg(t_cube *cube);
 
 void	orientation_init(t_cube *cube);
 
+unsigned int	hex_from_rgb(int *rgb);
+
 #endif

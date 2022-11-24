@@ -67,14 +67,40 @@ typedef struct	s_cube->info
 							{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 						};*/
 
+unsigned int	rgb_to_hex(int *rgb)
+{
+	int	hex;
+
+	hex = 0;
+	hex += rgb[0] * 65536;
+	hex += rgb[1] * 256;
+	hex += rgb[2];
+	return (hex);
+}
+
+void	ft_pixel_put(t_img *tex, int x, int y, unsigned int color)
+{
+	int	*dest;
+
+	dest = tex->data + (y * tex->size_l + x * (tex->bpp / 8));
+	*(unsigned int *)dest = color;
+}
+
 void	draw(t_cube *cube)
 {
-	for (int y = 0; y < height; y++)
+	int	x;
+	int	y;
+
+	y = 0;
+	while (y < height)
 	{
-		for (int x = 0; x < width; x++)
+		x = 0;
+		while (x < width)
 		{
 			cube->info.img.data[y * width + x] = cube->info.buf[y][x];
+			x++;
 		}
+		y++;
 	}
 	mlx_put_image_to_window(cube->info.mlx, cube->info.win, cube->info.img.img, 0, 0);
 }
@@ -82,18 +108,36 @@ void	draw(t_cube *cube)
 void	calc(t_cube *cube)
 {
 	int	x;
+	int	y;
+	int	i;
+	int	j;
 
 	x = 0;
 	if (cube->info.re_buf == 1)
 	{
-		for (int i = 0; i < height; i++)
+		i = 0;
+		while (i < height / 2)
 		{
-			for (int j = 0; j < width; j++)
+			j = 0;
+			while (j < width)
 			{
-				cube->info.buf[i][j] = 0;
+				cube->info.buf[i][j] = rgb_to_hex(cube->col_c);
+				j++;
 			}
+			i++;
+		}
+		while (i < height)
+		{
+			j = 0;
+			while (j < width)
+			{
+				cube->info.buf[i][j] = rgb_to_hex(cube->col_f);
+				j++;
+			}
+			i++;
 		}
 	}
+
 	while (x < width)
 	{
 		double cameraX = 2 * x / (double)width - 1;
@@ -176,7 +220,6 @@ void	calc(t_cube *cube)
 			drawEnd = height - 1;
 
 		// texturing calculations
-		//int texNum = worldMap[mapX][mapY];
 
 		// choose texture
 		if (side == 0)
@@ -190,7 +233,7 @@ void	calc(t_cube *cube)
 		{
 			if (rayDirX < 0)
 				cube->tex_ind = 0;
-			else
+			else if (rayDirX > 0)
 				cube->tex_ind = 1;
 		}
 
@@ -213,7 +256,8 @@ void	calc(t_cube *cube)
 		double step = 1.0 * texHeight / lineHeight;
 		// Starting texture coordinate
 		double texPos = (drawStart - height / 2 + lineHeight / 2) * step;
-		for (int y = drawStart; y < drawEnd; y++)
+		y = drawStart;
+		while ( y < drawEnd)
 		{
 			// Cast the texture coordinate to integer, and mask with (texHeight - 1) in case of overflow
 			int texY = (int)texPos & (texHeight - 1);
@@ -224,6 +268,7 @@ void	calc(t_cube *cube)
 			//	color = (color >> 1) & 8355711;
 			cube->info.buf[y][x] = color;
 			cube->info.re_buf = 1;
+			y++;
 		}
 		x++;
 	}
@@ -231,7 +276,6 @@ void	calc(t_cube *cube)
 
 int	main_loop(t_cube *cube)
 {
-	//draw_bg(cube);
 	calc(cube);
 	draw(cube);
 	return (0);
@@ -291,7 +335,7 @@ int	key_press(int key, t_cube *cube)
 		cube->info.planeY = oldPlaneX * sin(cube->info.rotSpeed) + cube->info.planeY * cos(cube->info.rotSpeed);
 	}
 	if (key == 65307)
-		exit(0);
+		close_cube(cube);
 	mlx_clear_window(cube->info.mlx, cube->info.win);
 	main_loop(cube);
 	return (0);
@@ -299,14 +343,21 @@ int	key_press(int key, t_cube *cube)
 
 void	load_image(t_cube *cube, int *texture, char *path, t_img *img)
 {
+	int	x;
+	int	y;
+
+	y = 0;
 	img->img = mlx_xpm_file_to_image(cube->info.mlx, path, &img->img_width, &img->img_height);
 	img->data = (int *)mlx_get_data_addr(img->img, &img->bpp, &img->size_l, &img->endian);
-	for (int y = 0; y < img->img_height; y++)
+	while (y < img->img_height)
 	{
-		for (int x = 0; x < img->img_width; x++)
+		x = 0;
+		while (x < img->img_width)
 		{
 			texture[img->img_width * y + x] = img->data[img->img_width * y + x];
+			x++;
 		}
+		y++;
 	}
 	mlx_destroy_image(cube->info.mlx, img->img);
 }
@@ -316,13 +367,16 @@ void	load_texture(t_cube *cube)
 	t_img	img;
 
 	load_image(cube, cube->info.texture[0], "../textures/wood.xpm", &img);
-	load_image(cube, cube->info.texture[1], "../textures/eagle.xpm", &img);
+	load_image(cube, cube->info.texture[1], "../textures/colorstone.xpm", &img);
 	load_image(cube, cube->info.texture[2], "../textures/bluestone.xpm", &img);
 	load_image(cube, cube->info.texture[3], "../textures/redbrick.xpm", &img);
 }
 
 void	run_cube2(t_cube *cube)
 {
+	int	i;
+	int	j;
+	
 	cube->info.mlx = mlx_init();
 
 	orientation_init(cube);
@@ -334,27 +388,39 @@ void	run_cube2(t_cube *cube)
 	cube->info.planeY = 0.66;
 	cube->info.re_buf = 0;
 
-	for (int i = 0; i < height; i++)
+	i = 0;
+	while (i < height)
 	{
-		for (int j = 0; j < width; j++)
+		j = 0;
+		while (j < width)
 		{
 			cube->info.buf[i][j] = 0;
+			j++;
 		}
+		i++;
 	}
 
-	if (!(cube->info.texture = (int **)malloc(sizeof(int *) * 4)))
+	cube->info.texture = (int **)malloc(sizeof(int *) * 4);
+	if (!cube->info.texture)
 		return ;
-	for (int i = 0; i < 4; i++)
+	i = 0;
+	while ( i < 4)
 	{
-		if (!(cube->info.texture[i] = (int *)malloc(sizeof(int) * (texHeight * texWidth))))
+		cube->info.texture[i] = (int *)malloc(sizeof(int) * (texHeight * texWidth));
+		if (!cube->info.texture[i])
 			return ;
+		i++;
 	}
-	for (int i = 0; i < 4; i++)
+	i = 0;
+	while (i < 4)
 	{
-		for (int j = 0; j < texHeight * texWidth; j++)
+		j = 0;
+		while (j < texHeight * texWidth)
 		{
 			cube->info.texture[i][j] = 0;
+			j++;
 		}
+		i++;
 	}
 
 	load_texture(cube);
@@ -369,6 +435,7 @@ void	run_cube2(t_cube *cube)
 
 	mlx_loop_hook(cube->info.mlx, &main_loop, cube);
 	mlx_hook(cube->info.win, 2, 1L << 0, &key_press, cube);
+	mlx_hook(cube->info.win, 17, 0L, close_cube, cube);
 
 	mlx_loop(cube->info.mlx);
 }

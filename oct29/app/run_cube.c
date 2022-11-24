@@ -12,16 +12,42 @@
 
 #include "../assets/cub3d.h"
 
+// void	destroy_image(t_cube *cube)
+// {
+// 	if (game->wall.img)
+// 		mlx_destroy_image(game->mlx, game->wall.img);
+// 	if (game->space.img)
+// 		mlx_destroy_image(game->mlx, game->space.img);
+// 	if (game->coins.img)
+// 		mlx_destroy_image(game->mlx, game->coins.img);
+// 	if (game->exit[0].img)
+// 		mlx_destroy_image(game->mlx, game->exit[0].img);
+// 	if (game->exit[1].img)
+// 		mlx_destroy_image(game->mlx, game->exit[1].img);
+// }
+
+void	destroy_map(t_cube *cube)
+{
+	int	i;
+
+	i = 0;
+	while (i < mapHeight)
+	{
+		free(cube->map[i]);
+		i++;
+	}
+	free(cube->map);
+}
+
 int	close_cube(t_cube *cube)
 {
-	//destroy_map(cube);
+	destroy_map(cube);
 	//destroy_image(cube);
-	//mlx_clear_window(cube->mlx, cube->window);
-	//mlx_loop_end(cube->mlx);
-	//mlx_destroy_window(cube->mlx, cube->window);
-	//mlx_destroy_display(cube->mlx);
-	//free(cube->mlx);
-	(void)cube;
+	mlx_clear_window(cube->info.mlx, cube->info.win);
+	//mlx_loop_end(cube->info.mlx);
+	mlx_destroy_window(cube->info.mlx, cube->info.win);
+	//mlx_destroy_display(cube->info.mlx);
+	free(cube->info.mlx);
 	exit(0);
 	return (1);
 }
