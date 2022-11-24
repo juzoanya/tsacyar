@@ -269,7 +269,7 @@ int	key_press(int key, t_cube *cube)
 			cube->info.posY += cube->info.dirY* cube->info.moveSpeed;
 	}
 	//rotate to the right
-	if (key == 63636)
+	if (key == 65361)
 	{
 		//both camera direction and camera plane must be rotated
 		double oldDirX = cube->info.dirX;
@@ -280,7 +280,7 @@ int	key_press(int key, t_cube *cube)
 		cube->info.planeY = oldPlaneX * sin(-cube->info.rotSpeed) + cube->info.planeY * cos(-cube->info.rotSpeed);
 	}
 	//rotate to the left
-	if (key == 69698)
+	if (key == 65363)
 	{
 		//both camera direction and camera plane must be rotated
 		double oldDirX = cube->info.dirX;
@@ -290,8 +290,8 @@ int	key_press(int key, t_cube *cube)
 		cube->info.planeX = cube->info.planeX * cos(cube->info.rotSpeed) - cube->info.planeY * sin(cube->info.rotSpeed);
 		cube->info.planeY = oldPlaneX * sin(cube->info.rotSpeed) + cube->info.planeY * cos(cube->info.rotSpeed);
 	}
-	//if (key == K_ESC)
-	//	exit(0);
+	if (key == 65307)
+		exit(0);
 	mlx_clear_window(cube->info.mlx, cube->info.win);
 	main_loop(cube);
 	return (0);
