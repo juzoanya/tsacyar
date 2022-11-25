@@ -12,32 +12,58 @@
 
 #include "../assets/cub3d.h"
 
+// void	destroy_image(t_cube *cube)
+// {
+// 	if (game->wall.img)
+// 		mlx_destroy_image(game->mlx, game->wall.img);
+// 	if (game->space.img)
+// 		mlx_destroy_image(game->mlx, game->space.img);
+// 	if (game->coins.img)
+// 		mlx_destroy_image(game->mlx, game->coins.img);
+// 	if (game->exit[0].img)
+// 		mlx_destroy_image(game->mlx, game->exit[0].img);
+// 	if (game->exit[1].img)
+// 		mlx_destroy_image(game->mlx, game->exit[1].img);
+// }
+
+void	destroy_map(t_cube *cube)
+{
+	int	i;
+
+	i = 0;
+	while (cube->map[i])
+	{
+		free(cube->map[i]);
+		i++;
+	}
+	free(cube->map);
+}
+
 int	close_cube(t_cube *cube)
 {
-	//destroy_map(cube);
+	destroy_map(cube);
 	//destroy_image(cube);
-	//mlx_clear_window(cube->mlx, cube->window);
+	mlx_clear_window(cube->mlx, cube->window);
 	//mlx_loop_end(cube->mlx);
-	//mlx_destroy_window(cube->mlx, cube->window);
+	mlx_destroy_window(cube->mlx, cube->window);
 	//mlx_destroy_display(cube->mlx);
-	//free(cube->mlx);
-	(void)cube;
+	free(cube->mlx);
 	exit(0);
 	return (1);
 }
 
 void	set_orientation(t_cube *cube)
 {
-	cube->rays.dir.x = 0;
-	cube->rays.dir.y = 0;
+	cube->ply.dir.x = 0;
+	cube->ply.dir.y = 0;
 	if (cube->ply.orient == 'N')
-		cube->rays.dir.y = -1;
+		cube->ply.dir.y = -1;
 	else if (cube->ply.orient == 'S')
-		cube->rays.dir.y = 1;
+		cube->ply.dir.y = 1;
 	else if (cube->ply.orient == 'W')
-		cube->rays.dir.x = -1;
+		cube->ply.dir.x = -1;
 	else if (cube->ply.orient == 'E')
-		cube->rays.dir.x = 1;
+		cube->ply.dir.x = 1;
 
 }
 
@@ -50,14 +76,14 @@ void	orientation_init(t_cube *cube)
 	j = -1;
 	while (cube->map[++i] && j < 0)
 		j = ft_strstrchr(cube->map[i], "NSEW");
-	cube->ply.pos.x = j + 0.5;
-	cube->ply.pos.y = (i - 1) + 0.5;
-	cube->ply.orient = cube->map[(int)cube->ply.pos.y][(int)cube->ply.pos.x];
-	set_orientation(cube);
-	//printf("x = %f | y = %f\n", cube->ply.pos.x, cube->ply.pos.y);
+	cube->ply.pos.x = (i - 1);// + 0.5;
+	cube->ply.pos.y = j;// + 0.5;
+	cube->ply.orient = cube->map[(int)cube->ply.pos.x][(int)cube->ply.pos.y];
+	//set_orientation(cube);
 }
 
-unsigned int	hex_from_rgb(int *rgb)
+
+/*unsigned int	hex_from_rgb(int *rgb)
 {
 	int	hex;
 
@@ -138,4 +164,4 @@ void	run_cube(t_cube *cube)
 	//mlx_hook(cube->window, 2, 1L << 0, play_input, (void *)cube);
 	//mlx_loop_hook(cube->mlx, raycast, cube);
 	mlx_loop(cube->mlx);
-}
+}*/

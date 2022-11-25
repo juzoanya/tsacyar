@@ -1,7 +1,7 @@
-NO ./assets/textures/wall_n.xpm
-SO ./assets/textures/wall_n.xpm
-WE ./assets/textures/wall_n.xpm
-EA ./assets/textures/wall_n.xpm
+NO ./assets/textures/colorstone.xpm
+SO ./assets/textures/redbrick.xpm
+WE ./assets/textures/bluestone.xpm
+EA ./assets/textures/wood.xpm
 
 F 26,13,0
 C 230,242,255
@@ -11,7 +11,7 @@ C 230,242,255
         1011000001110000000000001
         1001000000000000000000001
 111111111011000001110000000000001
-100000000011000001110111111111111
+100000000011000001110111110111111
 11110111111111011100000010001 1
 11110111111111011101010010001
 11000000110101011100000010001

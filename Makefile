@@ -16,6 +16,7 @@ SRC = 	app/main.c	app/check_valid_scene.c	app/run_cube.c	app/raycast.c	\
 		assets/check_valid_scene_utils.c	assets/check_valid_scene_utils0.c	\
 		assets/check_valid_scene_utils1.c	assets/check_valid_scene_utils2.c	\
 		assets/libft_tools.c \
+		raycast.c \
 
 OBJ = $(subst .c,.o,$(SRC))
 

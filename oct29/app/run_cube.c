@@ -80,7 +80,6 @@ void	orientation_init(t_cube *cube)
 	cube->ply.pos.y = j + 0.5;
 	cube->ply.orient = cube->map[(int)cube->ply.pos.x][(int)cube->ply.pos.y];
 	//set_orientation(cube);
-	printf("x = %f | y = %f\n", cube->ply.pos.x, cube->ply.pos.y);
 }
 
 unsigned int	hex_from_rgb(int *rgb)

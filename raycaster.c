@@ -199,6 +199,7 @@ void	calc(t_cube *cube)
 				mapY += stepY;
 				side = 1;
 			}
+			printf("mapX = %d | mapY = %d\n", mapX, mapY);
 			//Check if ray has hit a wall
 			if (cube->map[mapX][mapY] == '1')
 				hit = 1;
