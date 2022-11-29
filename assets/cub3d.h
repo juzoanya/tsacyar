@@ -17,7 +17,7 @@
 # define MAX_LINES	10000
 # define MAX_CHARS	10000
 
-# define WIN_WIDTH	768
+# define WIN_WIDTH	1080
 # define WIN_HEIGHT	480
 
 # include <stdio.h>
@@ -64,14 +64,15 @@ typedef struct s_player
 	t_vect	pos;			//player position and also position of camera
 	t_axis	step;			//what x/y direction to step into (either +1 or -1)
 	t_vect	dir;
+	t_vect	old_dir;
 }				t_player;
 
 typedef struct	s_rays
 {
 	int		w_side;			//checks if a side wall is hit
 	int		hit;
-	t_vect	pos;
 	t_vect	plane;
+	t_vect	old_plane;
 	t_vect	ray_dir;
 	t_vect	side_dist;		//distance a ray has to travel from start position to x or y side. It changes as player/camera moves
 	t_vect	delta_dist;		//distance ray has to travel from one x/y-side to the next x/y-side
@@ -81,7 +82,6 @@ typedef struct	s_rays
 	int		draw_start;
 	int		draw_end;
 	t_axis	tex;			//x-coordinate of texture
-//	int		tex_y;
 	double	tex_pos;
 	double	wall_x;			//exact value where wall was hit. Needed to calculate the tex_x. Its always x-cordinate of texture but if side == 1, itsthe y-coordinate of the wall
 	double	step;

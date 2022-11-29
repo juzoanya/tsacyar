@@ -11,20 +11,11 @@ unsigned int	rgb_to_hex(int *rgb)
 	return (hex);
 }
 
-
 double	check_and_fabs(double ray_dir)
 {
 	if (ray_dir == 0)
 		ray_dir = 1e30;
 	return (fabs(1 / ray_dir));
-}
-
-void	ft_pixel_put(t_img *tex, int x, int y, unsigned int color)
-{
-	int	*dest;
-
-	dest = tex->addr + (y * tex->size_l + x * (tex->bpp / 8));
-	*(unsigned int *)dest = color;
 }
 
 void	draw(t_cube *cube)
@@ -46,231 +37,254 @@ void	draw(t_cube *cube)
 	mlx_put_image_to_window(cube->mlx, cube->window, cube->img.img, 0, 0);
 }
 
-void	calc(t_cube *cube)
+void	render_bg(t_cube *cube)
 {
-	int	x;
-	int	y;
 	int	i;
 	int	j;
 
-	x = 0;
 	if (cube->re_buf == 1)
 	{
-		i = 0;
-		while (i < cube->win.y / 2)
+		i = -1;
+		while (++i < cube->win.y / 2)
 		{
-			j = 0;
-			while (j < cube->win.x)
-			{
+			j = -1;
+			while (++j < cube->win.x)
 				cube->buf[i][j] = rgb_to_hex(cube->col_c);
-				j++;
-			}
-			i++;
 		}
-		while (i < cube->win.y)
+		while (++i < cube->win.y)
 		{
-			j = 0;
-			while (j < cube->win.x)
-			{
+			j = -1;
+			while (++j < cube->win.x)
 				cube->buf[i][j] = rgb_to_hex(cube->col_f);
-				j++;
-			}
-			i++;
 		}
 	}
+}
 
+void	compute_steps(t_cube *cube)
+{
+	if (cube->rays.ray_dir.x < 0)
+	{
+		cube->ply.step.x = -1;
+		cube->rays.side_dist.x = (cube->ply.pos.x - cube->rays.map.x) * cube->rays.delta_dist.x;
+	}
+	else
+	{
+		cube->ply.step.x = 1;
+		cube->rays.side_dist.x = (cube->rays.map.x + 1.0 - cube->ply.pos.x) * cube->rays.delta_dist.x;
+	}
+	if (cube->rays.ray_dir.y < 0)
+	{
+		cube->ply.step.y = -1;
+		cube->rays.side_dist.y = (cube->ply.pos.y - cube->rays.map.y) * cube->rays.delta_dist.y;
+	}
+	else
+	{
+		cube->ply.step.y = 1;
+		cube->rays.side_dist.y = (cube->rays.map.y + 1.0 - cube->ply.pos.y) * cube->rays.delta_dist.y;
+	}
+}
+
+void	compute_dda(t_cube *cube)
+{
+	while (cube->rays.hit == 0)
+	{
+		//jump to next map square, OR in x-direction, OR in y-direction
+		if (cube->rays.side_dist.x < cube->rays.side_dist.y)
+		{
+			cube->rays.side_dist.x += cube->rays.delta_dist.x;
+			cube->rays.map.x += cube->ply.step.x;
+			cube->rays.w_side = 0;
+		}
+		else
+		{
+			cube->rays.side_dist.y += cube->rays.delta_dist.y;
+			cube->rays.map.y += cube->ply.step.y;
+			cube->rays.w_side = 1;
+		}
+		//Check if ray has hit a wall
+		if (cube->map[cube->rays.map.x][cube->rays.map.y] == '1')
+			cube->rays.hit = 1;
+	}
+	if (cube->rays.w_side == 0)
+		cube->rays.perp_wall_dist = (cube->rays.map.x - cube->ply.pos.x + (1 - cube->ply.step.x) / 2) / cube->rays.ray_dir.x;
+	else
+		cube->rays.perp_wall_dist = (cube->rays.map.y - cube->ply.pos.y + (1 - cube->ply.step.y) / 2) / cube->rays.ray_dir.y;
+}
+
+void	select_texture(t_cube *cube)
+{
+	// choose texture
+	if (cube->rays.w_side == 0)
+	{
+		if (cube->rays.ray_dir.x < 0)
+			cube->tex_index = 3;// E;
+		else
+			cube->tex_index = 2;//W;
+	}
+	else
+	{
+		if (cube->rays.ray_dir.x < 0)
+			cube->tex_index = 0;// N;
+		else
+			cube->tex_index = 1;//S;
+	}
+}
+
+void	texture_calc(t_cube *cube)
+{
+	//Calculate height of line to draw on screen
+	cube->rays.line_height = (int)(cube->win.y / cube->rays.perp_wall_dist);
+	// calculate value of wallX
+	if (cube->rays.w_side == 0)
+		cube->rays.wall_x = cube->ply.pos.y + cube->rays.perp_wall_dist * cube->rays.ray_dir.y;
+	else
+		cube->rays.wall_x = cube->ply.pos.x + cube->rays.perp_wall_dist * cube->rays.ray_dir.x;
+	cube->rays.wall_x -= floor(cube->rays.wall_x);
+	// x coordinate on the texture
+	cube->rays.tex.x = (int)(cube->rays.wall_x * (double)cube->tex_widt);
+	if (cube->rays.w_side == 0 && cube->rays.ray_dir.x > 0)
+		cube->rays.tex.x = cube->tex_widt - cube->rays.tex.x - 1;
+	if (cube->rays.w_side == 1 && cube->rays.ray_dir.y < 0)
+		cube->rays.tex.x = cube->tex_widt - cube->rays.tex.x - 1;
+	// How much to increase the texture coordinate perscreen pixel
+	cube->rays.step = 1.0 * cube->tex_hght / cube->rays.line_height;
+}
+
+void	compute_ray_color(t_cube *cube, int x)
+{
+	int	y;
+	int	color;
+
+	//calculate lowest and highest pixel to fill in current stripe
+	cube->rays.draw_start = -cube->rays.line_height / 2 + cube->win.y / 2;
+	if(cube->rays.draw_start < 0)
+		cube->rays.draw_start = 0;
+	cube->rays.draw_end = cube->rays.line_height / 2 + cube->win.y / 2;
+	if(cube->rays.draw_end >= cube->win.y)
+		cube->rays.draw_end = cube->win.y - 1;
+
+	cube->rays.tex_pos = (cube->rays.draw_start - cube->win.y / 2 + cube->rays.line_height / 2) * cube->rays.step;
+	y = cube->rays.draw_start;
+	while ( y < cube->rays.draw_end)
+	{
+		// Cast the texture coordinate to integer, and mask with (cube->tex_hght - 1) in case of overflow
+		cube->rays.tex.y = (int)cube->rays.tex_pos & (cube->tex_hght - 1);
+		cube->rays.tex_pos += cube->rays.step;
+		color = cube->textures[cube->tex_index][cube->tex_hght * cube->rays.tex.y + cube->rays.tex.x];
+		//printf("->%d\n", cube->tex_hght * cube->rays.tex.y + cube->rays.tex.x);
+		cube->buf[y][x] = color;
+		cube->re_buf = 1;
+		y++;
+	}
+}
+
+void	calc(t_cube *cube)
+{
+	int	x;
+
+	x = 0;
+	//render_bg(cube);
 	while (x < cube->win.x)
 	{
 		double	camera;
 
+		cube->rays.hit = 0;
 		camera = 2 * x / (double)cube->win.x - 1;
 		cube->rays.ray_dir.x = cube->ply.dir.x + cube->rays.plane.x * camera;
 		cube->rays.ray_dir.y = cube->ply.dir.y + cube->rays.plane.y * camera;
-		
 		cube->rays.map.x = (int)cube->ply.pos.x;
 		cube->rays.map.y = (int)cube->ply.pos.y;
-
-		//length of ray from current position to next x or y-side
-		//double cube->rays.side_dist.x;
-		//double cube->rays.side_dist.y;
-		
-		 //length of ray from one x or y-side to next x or y-side
 		cube->rays.delta_dist.x = fabs(1 / cube->rays.ray_dir.x);
 		cube->rays.delta_dist.y = fabs(1 / cube->rays.ray_dir.y);
-		
-		cube->rays.hit = 0; //was there a wall hit?
-		//int side; //was a NS or a EW wall hit?
-
-		if (cube->rays.ray_dir.x < 0)
-		{
-			cube->ply.step.x = -1;
-			cube->rays.side_dist.x = (cube->ply.pos.x - cube->rays.map.x) * cube->rays.delta_dist.x;
-		}
-		else
-		{
-			cube->ply.step.x = 1;
-			cube->rays.side_dist.x = (cube->rays.map.x + 1.0 - cube->ply.pos.x) * cube->rays.delta_dist.x;
-		}
-		if (cube->rays.ray_dir.y < 0)
-		{
-			cube->ply.step.y = -1;
-			cube->rays.side_dist.y = (cube->ply.pos.y - cube->rays.map.y) * cube->rays.delta_dist.y;
-		}
-		else
-		{
-			cube->ply.step.y = 1;
-			cube->rays.side_dist.y = (cube->rays.map.y + 1.0 - cube->ply.pos.y) * cube->rays.delta_dist.y;
-		}
-
-		while (cube->rays.hit == 0)
-		{
-			//jump to next map square, OR in x-direction, OR in y-direction
-			if (cube->rays.side_dist.x < cube->rays.side_dist.y)
-			{
-				cube->rays.side_dist.x += cube->rays.delta_dist.x;
-				cube->rays.map.x += cube->ply.step.x;
-				cube->rays.w_side = 0;
-			}
-			else
-			{
-				cube->rays.side_dist.y += cube->rays.delta_dist.y;
-				cube->rays.map.y += cube->ply.step.y;
-				cube->rays.w_side = 1;
-			}
-			//Check if ray has hit a wall
-			if (cube->map[cube->rays.map.x][cube->rays.map.y] == '1')
-				cube->rays.hit = 1;
-		}
-		if (cube->rays.w_side == 0)
-			cube->rays.perp_wall_dist = (cube->rays.map.x - cube->ply.pos.x + (1 - cube->ply.step.x) / 2) / cube->rays.ray_dir.x;
-		else
-			cube->rays.perp_wall_dist = (cube->rays.map.y - cube->ply.pos.y + (1 - cube->ply.step.y) / 2) / cube->rays.ray_dir.y;
-
-		//Calculate height of line to draw on screen
-		cube->rays.line_height = (int)(cube->win.y / cube->rays.perp_wall_dist);
-
-		//calculate lowest and highest pixel to fill in current stripe
-		cube->rays.draw_start = -cube->rays.line_height / 2 + cube->win.y / 2;
-		if(cube->rays.draw_start < 0)
-			cube->rays.draw_start = 0;
-		cube->rays.draw_end = cube->rays.line_height / 2 + cube->win.y / 2;
-		if(cube->rays.draw_end >= cube->win.y)
-			cube->rays.draw_end = cube->win.y - 1;
-
-		// texturing calculations
-
-		// choose texture
-		if (cube->rays.w_side == 0)
-		{
-			if (cube->rays.ray_dir.x < 0)
-				cube->tex_index = E;// 3;
-			else
-				cube->tex_index = W;//2;
-		}
-		else
-		{
-			if (cube->rays.ray_dir.x < 0)
-				cube->tex_index = N;// 0;
-			else if (cube->rays.ray_dir.x > 0)
-				cube->tex_index = S;//1;
-		}
-
-		// calculate value of wallX
-		//double wallX;
-		if (cube->rays.w_side == 0)
-			cube->rays.wall_x = cube->ply.pos.y + cube->rays.perp_wall_dist * cube->rays.ray_dir.y;
-		else
-			cube->rays.wall_x = cube->ply.pos.x + cube->rays.perp_wall_dist * cube->rays.ray_dir.x;
-		cube->rays.wall_x -= floor(cube->rays.wall_x);
-
-		// x coordinate on the texture
-		cube->rays.tex.x = (int)(cube->rays.wall_x * (double)cube->tex_widt);
-		if (cube->rays.w_side == 0 && cube->rays.ray_dir.x > 0)
-			cube->rays.tex.x = cube->tex_widt - cube->rays.tex.x - 1;
-		if (cube->rays.w_side == 1 && cube->rays.ray_dir.y < 0)
-			cube->rays.tex.x = cube->tex_widt - cube->rays.tex.x - 1;
-
-		// How much to increase the texture coordinate perscreen pixel
-		cube->rays.step = 1.0 * cube->tex_hght / cube->rays.line_height;
-		// Starting texture coordinate
-		cube->rays.tex_pos = (cube->rays.draw_start - cube->win.y / 2 + cube->rays.line_height / 2) * cube->rays.step;
-		y = cube->rays.draw_start;
-		while ( y < cube->rays.draw_end)
-		{
-			int	color;
-			// Cast the texture coordinate to integer, and mask with (cube->tex_hght - 1) in case of overflow
-			cube->rays.tex.y = (int)cube->rays.tex_pos & (cube->tex_hght - 1);
-			cube->rays.tex_pos += cube->rays.step;
-			color = cube->textures[cube->tex_index][cube->tex_hght * cube->rays.tex.y + cube->rays.tex.x];
-			//printf("->%d\n", cube->tex_hght * cube->rays.tex.y + cube->rays.tex.x);
-			cube->buf[y][x] = color;
-			cube->re_buf = 1;
-			y++;
-		}
+		compute_steps(cube);
+		compute_dda(cube);
+		select_texture(cube);
+		texture_calc(cube);
+		compute_ray_color(cube, x);
 		x++;
 	}
 }
 
 int	main_loop(t_cube *cube)
 {
+	render_bg(cube);
 	calc(cube);
 	draw(cube);
 	return (0);
 }
 
-int	key_press(int key, t_cube *cube)
+void	move_player_y(t_cube *cube, char *str)
 {
-	if (key == 87 + 32) //W
+	if ((ft_strncmp(str, "FORWARD", ft_strlen(str))) == 0)
 	{
 		if (cube->map[(int)(cube->ply.pos.x + cube->ply.dir.x * cube->rays.move_speed)][(int)(cube->ply.pos.y)] != '1')
 			cube->ply.pos.x += cube->ply.dir.x * cube->rays.move_speed;
 		if (cube->map[(int)(cube->ply.pos.x)][(int)(cube->ply.pos.y + cube->ply.dir.y* cube->rays.move_speed)] != '1')
 			cube->ply.pos.y += cube->ply.dir.y * cube->rays.move_speed;
 	}
-	//move backwards if no wall behind you
-	if (key == 83 + 32) //S
+	if ((ft_strncmp(str, "BACKWARD", ft_strlen(str))) == 0)
 	{
 		if (cube->map[(int)(cube->ply.pos.x - cube->ply.dir.x * cube->rays.move_speed)][(int)(cube->ply.pos.y)] != '1')
 			cube->ply.pos.x -= cube->ply.dir.x * cube->rays.move_speed;
 		if (cube->map[(int)(cube->ply.pos.x)][(int)(cube->ply.pos.y - cube->ply.dir.y* cube->rays.move_speed)] != '1')
 			cube->ply.pos.y -= cube->ply.dir.y* cube->rays.move_speed;
 	}
-	if (key == 65 + 32) //A
+}
+
+void	move_player_x(t_cube *cube, char *str)
+{
+	if ((ft_strncmp(str, "LEFT", ft_strlen(str))) == 0)
 	{
 		if (cube->map[(int)(cube->ply.pos.x - cube->rays.plane.x * cube->rays.move_speed)][(int)(cube->ply.pos.y)] != '1')
 			cube->ply.pos.x -= cube->rays.plane.x * cube->rays.move_speed;
 		if (cube->map[(int)(cube->ply.pos.x)][(int)(cube->ply.pos.y - cube->rays.plane.y * cube->rays.move_speed)] != '1')
 			cube->ply.pos.y -= cube->rays.plane.y * cube->rays.move_speed;
 	}
-	if (key == 68 + 32) //D
+	if ((ft_strncmp(str, "RIGHT", ft_strlen(str))) == 0)
 	{
 		if (cube->map[(int)(cube->ply.pos.x + cube->rays.plane.x * cube->rays.move_speed)][(int)(cube->ply.pos.y)] != '1')
 			cube->ply.pos.x += cube->rays.plane.x * cube->rays.move_speed;
 		if (cube->map[(int)(cube->ply.pos.x)][(int)(cube->ply.pos.y + cube->rays.plane.y * cube->rays.move_speed)] != '1')
 			cube->ply.pos.y += cube->rays.plane.y* cube->rays.move_speed;
 	}
-	//rotate to the right
-	if (key == 65361)
+}
+
+void	rotate_view(t_cube *cube, char *str)
+{
+	if ((ft_strncmp(str, "RIGHT", ft_strlen(str))) == 0)
 	{
-		//both camera direction and camera plane must be rotated
-		double oldDirX = cube->ply.dir.x;
+		cube->ply.old_dir.x = cube->ply.dir.x;
 		cube->ply.dir.x = cube->ply.dir.x * cos(-cube->rays.rot_speed) - cube->ply.dir.y* sin(-cube->rays.rot_speed);
-		cube->ply.dir.y= oldDirX * sin(-cube->rays.rot_speed) + cube->ply.dir.y* cos(-cube->rays.rot_speed);
-		double oldPlaneX = cube->rays.plane.x;
+		cube->ply.dir.y= cube->ply.old_dir.x * sin(-cube->rays.rot_speed) + cube->ply.dir.y* cos(-cube->rays.rot_speed);
+		cube->rays.old_plane.x = cube->rays.plane.x;
 		cube->rays.plane.x = cube->rays.plane.x * cos(-cube->rays.rot_speed) - cube->rays.plane.y * sin(-cube->rays.rot_speed);
-		cube->rays.plane.y = oldPlaneX * sin(-cube->rays.rot_speed) + cube->rays.plane.y * cos(-cube->rays.rot_speed);
+		cube->rays.plane.y = cube->rays.old_plane.x * sin(-cube->rays.rot_speed) + cube->rays.plane.y * cos(-cube->rays.rot_speed);
 	}
-	//rotate to the left
-	if (key == 65363)
+	else if ((ft_strncmp(str, "LEFT", ft_strlen(str))) == 0)
 	{
-		//both camera direction and camera plane must be rotated
-		double oldDirX = cube->ply.dir.x;
+		cube->ply.old_dir.x = cube->ply.dir.x;
 		cube->ply.dir.x = cube->ply.dir.x * cos(cube->rays.rot_speed) - cube->ply.dir.y* sin(cube->rays.rot_speed);
-		cube->ply.dir.y= oldDirX * sin(cube->rays.rot_speed) + cube->ply.dir.y* cos(cube->rays.rot_speed);
-		double oldPlaneX = cube->rays.plane.x;
+		cube->ply.dir.y= cube->ply.old_dir.x * sin(cube->rays.rot_speed) + cube->ply.dir.y* cos(cube->rays.rot_speed);
+		cube->rays.old_plane.x = cube->rays.plane.x;
 		cube->rays.plane.x = cube->rays.plane.x * cos(cube->rays.rot_speed) - cube->rays.plane.y * sin(cube->rays.rot_speed);
-		cube->rays.plane.y = oldPlaneX * sin(cube->rays.rot_speed) + cube->rays.plane.y * cos(cube->rays.rot_speed);
+		cube->rays.plane.y = cube->rays.old_plane.x * sin(cube->rays.rot_speed) + cube->rays.plane.y * cos(cube->rays.rot_speed);
 	}
+}
+
+int	key_press(int key, t_cube *cube)
+{
+	if (key == 119 || key == 119 - 32) //W
+		move_player_y(cube, "FORWARD");
+	if (key == 115 || key == 115 - 32) //S
+		move_player_y(cube, "BACKWARD");
+	if (key == 97 || key == 65) //A
+		move_player_x(cube, "LEFT");
+	if (key == 100 || key == 68) //D
+		move_player_x(cube, "RIGHT");
+	if (key == 65361)
+		rotate_view(cube, "RIGHT");
+	if (key == 65363)
+		rotate_view(cube, "LEFT");
 	if (key == 65307)
 		close_cube(cube);
 	mlx_clear_window(cube->mlx, cube->window);
@@ -376,7 +390,6 @@ void	run_cube(t_cube *cube)
 	if (!cube->img.img)
 		printf("Image initialization failed!\n");
 	cube->img.addr = (int *)mlx_get_data_addr(cube->img.img, &cube->img.bpp, &cube->img.size_l, &cube->img.endian);
-
 	mlx_loop_hook(cube->mlx, &main_loop, cube);
 	mlx_hook(cube->window, 2, 1L << 0, &key_press, cube);
 	mlx_hook(cube->window, 17, 0L, close_cube, cube);
