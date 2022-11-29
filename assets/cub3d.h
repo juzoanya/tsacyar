@@ -109,7 +109,6 @@ typedef struct	s_cube
 	char		**map;				// 2D array holding full map info
 	int			buf[WIN_HEIGHT][WIN_WIDTH];
 	int			**textures;
-	int			re_buf;
 }				t_cube;
 
 // libft functions in libft_tools.c file
@@ -146,13 +145,7 @@ int		scene_is_valid(t_cube *cube, char **rawdata);
 int		data_from_infile(t_cube *cube, char **rawdata, int fd);
 
 void	run_cube(t_cube *cube);
-void	run_cube2(t_cube *cube);
-
-int		raycast(t_cube *cube);
-
-void	ft_pixel_put(t_img *tex, int x, int y, unsigned int color);
-
-void	draw_bg(t_cube *cube);
+int		main_loop(t_cube *cube);
 
 void	orientation_init(t_cube *cube);
 
